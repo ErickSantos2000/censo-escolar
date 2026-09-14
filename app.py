@@ -8,7 +8,11 @@ def listar():
     dataset = read("instituicoes.json")
     # Converter o json -> InsitituicaoEnsino.
     instituicoesEnsino = [InstituicaoEnsino(
-        row["id"], row["no_entidade"], row["co_entidade"], row["qt_mat_bas"]) for row in dataset]
+        row["id"],
+        row["no_entidade"],
+        row["co_entidade"],
+        row["qt_mat_bas"])
+        for row in dataset]
     # Retorna a lista de InstituicoesEnsino.
     return instituicoesEnsino
 
@@ -45,10 +49,15 @@ def getAllInstituicoes():
     return insituicoesEnsinoReponse, 200
 
 
-@app.get("/instituicoesensino/<int:id>")
+@app.get("/instituicoesensino/<string:id>")
 def getByIdInstituicoes(id):
-    return {"id": "1", "co_inep": "123456"}, 200
+    instituicoesEnsino = listar()
+    instituicao = next((intituicoes for intituicoes in instituicoesEnsino if intituicoes.id == id), None)
 
+    if not instituicao:
+        return {"erro": "Instituição não encontrada"}, 404
+
+    return instituicao.toDict(), 200
 
 @app.post("/instituicoesensino")
 def postInstituicoes():
