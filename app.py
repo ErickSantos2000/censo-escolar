@@ -1,12 +1,13 @@
 from flask import Flask, request
-from models.instituicaoensino import InstituicaoEnsino
+from models.InstituicaoEnsino import InstituicaoEnsino
 from helpers.file.json import read
+import json
 
 
 def listar():
     # Ler o arquivo json.
     dataset = read("instituicoes.json")
-    # Converter o json -> InsitituicaoEnsino.
+    # Converter o json -> InstituicaoEnsino.
     instituicoesEnsino = [InstituicaoEnsino(
         row["id"],
         row["no_entidade"],
@@ -29,51 +30,76 @@ def index():
 def health():
     return {"health": "ok"}, 200
 
-# /instituicoesensino?co_inep=123456
 
-
+# Rota GET mantida intacta conforme solicitado
 @app.get("/instituicoesensino")
-def getAllInstituicoes():
+def getInstituicoes():
     insituicoesEnsino = listar()
-    print("Entrou na requisição")
-    coEntidade = request.args.get("co_entidade")
-    print(f'Valor do co_entidade do request: {coEntidade}')
-    print(f'Itens da lista de instituições:{len(insituicoesEnsino)}')
-    if coEntidade is not None:
-        insituicoesEnsinoReponse = [
-            insituicaoEnsino.toDict() for insituicaoEnsino in insituicoesEnsino if insituicaoEnsino.co_entidade == coEntidade]
-    else:
-        insituicoesEnsinoReponse = [
-            insituicaoEnsino.toDict() for insituicaoEnsino in insituicoesEnsino]
-
+    insituicoesEnsinoReponse = [insituicaoEnsino.toDict() for insituicaoEnsino in insituicoesEnsino]
     return insituicoesEnsinoReponse, 200
 
 
-@app.get("/instituicoesensino/<string:id>")
-def getByIdInstituicoes(id):
-    instituicoesEnsino = listar()
-    instituicao = next((intituicoes for intituicoes in instituicoesEnsino if intituicoes.id == id), None)
-
-    if not instituicao:
-        return {"erro": "Instituição não encontrada"}, 404
-
-    return instituicao.toDict(), 200
-
 @app.post("/instituicoesensino")
 def postInstituicoes():
-    data = request.get_json()
-    coInep = data.get("co_inep")
-    return {"id": 1, "co_inep": coInep}, 201
+    dados = request.get_json()
+    if not dados:
+        return {"erro": "Dados inválidos"}, 400
+
+    novo_instituicao = InstituicaoEnsino(
+        id=dados.get("id"),
+        no_entidade=dados.get("no_entidade"),
+        co_entidade=dados.get("co_entidade"),
+        qt_mat_bas=dados.get("qt_mat_bas")
+    )
+
+    dataset = read("instituicoes.json")
+    dataset.append(novo_instituicao.toDict())
+
+    with open("instituicoes.json", "w", encoding="utf-8") as f:
+        json.dump(dataset, f, indent=4, ensure_ascii=False)
+
+    return novo_instituicao.no_entidade, 201
 
 
 @app.put("/instituicoesensino/<int:id>")
-def putInstituicoes():
-    pass
+def putInstituicoes(id):
+    dados = request.get_json()
+    if not dados:
+        return {"erro": "Dados inválidos"}, 400
+
+    dataset = read("instituicoes.json")
+    encontrado = False
+
+    for row in dataset:
+        if str(row["id"]) == str(id):
+            row["id"] = dados.get("id", row["id"])
+            row["no_entidade"] = dados.get("no_entidade", row["no_entidade"])
+            row["co_entidade"] = dados.get("co_entidade", row["co_entidade"])
+            row["qt_mat_bas"] = dados.get("qt_mat_bas", row["qt_mat_bas"])
+            encontrado = True
+            break
+
+    if not encontrado:
+        return {"erro": "Instituição não encontrada"}, 404
+
+    with open("instituicoes.json", "w", encoding="utf-8") as f:
+        json.dump(dataset, f, indent=4, ensure_ascii=False)
+
+    return  200
 
 
 @app.delete("/instituicoesensino/<int:id>")
-def deleteInstituicoes():
-    pass
+def deleteInstituicoes(id):
+    dataset = read("instituicoes.json")
+    novo_dataset = [row for row in dataset if str(row["id"]) != str(id)]
+
+    if len(novo_dataset) == len(dataset):
+        return {"erro": "Instituição não encontrada"}, 404
+
+    with open("instituicoes.json", "w", encoding="utf-8") as f:
+        json.dump(novo_dataset, f, indent=4, ensure_ascii=False)
+
+    return  200
 
 
 def main(arg=[]):
