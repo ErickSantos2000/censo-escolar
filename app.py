@@ -1,6 +1,9 @@
 from flask import Flask, request
+
+from helpers.database.init__db import connection
 from models.InstituicaoEnsino import InstituicaoEnsino
 from helpers.file.json import read
+from helpers.database import get_connection
 import json
 
 
@@ -34,8 +37,29 @@ def health():
 # Rota GET mantida intacta conforme solicitado
 @app.get("/instituicoesensino")
 def getInstituicoes():
-    insituicoesEnsino = listar()
-    insituicoesEnsinoReponse = [insituicaoEnsino.toDict() for insituicaoEnsino in insituicoesEnsino]
+    insituicoesEnsinoReponse = []
+
+    # abre a conexão com o banco de dados
+    connection = get_connection()
+
+    # cria um um cursor, obj responsavel por executar comandos SQL e navegar pelos resultados
+    cursor = connection.cursor()
+
+    # Executar as DML de consulta
+    cursor.execute(f'SELECT * FROM tb_instituicao_ensino')
+
+    # fetchall pega todos os registros retornados pelo banco e os armazena na variavel dataset
+    dataset = cursor.fetchall()
+
+    # passa por cada linha e imprime o tipo de dado de cada registro no terminal
+    for row in dataset:
+        print(type(row))
+        insituicoesEnsinoReponse.append(row)
+
+    # é preciso fechar a conexão e o cursor
+    cursor.close()
+    connection.close()
+
     return insituicoesEnsinoReponse, 200
 
 
