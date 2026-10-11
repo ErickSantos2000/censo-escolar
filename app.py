@@ -6,18 +6,6 @@ from helpers.database import get_conn, close_conn
 import json
 
 
-def listar():
-    # Ler o arquivo json.
-    dataset = read("instituicoes.json")
-    # Converter o json -> InstituicaoEnsino.
-    instituicoesEnsino = [InstituicaoEnsino(
-        row["id"],
-        row["no_entidade"],
-        row["co_entidade"],
-        row["qt_mat_bas"])
-        for row in dataset]
-    # Retorna a lista de InstituicoesEnsino.
-    return instituicoesEnsino
 
 # instancia o app flask
 app = Flask(__name__)
