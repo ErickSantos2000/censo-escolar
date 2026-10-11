@@ -1,9 +1,8 @@
 from flask import Flask, request
 
-from helpers.database.init__db import connection
 from models.InstituicaoEnsino import InstituicaoEnsino
 from helpers.file.json import read
-from helpers.database import get_connection
+from helpers.database import get_conn, close_conn
 import json
 
 
@@ -20,8 +19,11 @@ def listar():
     # Retorna a lista de InstituicoesEnsino.
     return instituicoesEnsino
 
-
+# instancia o app flask
 app = Flask(__name__)
+
+# registra o teardown
+app.teardown_appcontext(close_conn)
 
 
 @app.route("/")
@@ -34,34 +36,56 @@ def health():
     return {"health": "ok"}, 200
 
 
-# Rota GET mantida intacta conforme solicitado
 @app.get("/instituicoesensino")
-def getInstituicoes():
+def getAllInstituicoes():
     insituicoesEnsinoReponse = []
 
     # abre a conexão com o banco de dados
-    connection = get_connection()
+    conn = get_conn()
 
     # cria um um cursor, obj responsavel por executar comandos SQL e navegar pelos resultados
-    cursor = connection.cursor()
+    cursor = conn.cursor()
 
-    # Executar as DML de consulta
+    # executa a DML de consulta
     cursor.execute(f'SELECT * FROM tb_instituicao_ensino')
 
     # fetchall pega todos os registros retornados pelo banco e os armazena na variavel dataset
     dataset = cursor.fetchall()
 
-    # passa por cada linha e imprime o tipo de dado de cada registro no terminal
+    # passa por cada linha retornada pela consulta do banco de dados
     for row in dataset:
-        print(type(row))
-        insituicoesEnsinoReponse.append(row)
+        # extrai os valores das colunas do select (no caso todas) usando os indices da tabela
+        no_entidade = row[1]
+        co_entidade = row[2]
+        no_uf = row[3]
+        sg_uf = row[4]
+        co_uf = row[5]
+        no_municipio = row[6]
+        co_municipio = row[7]
+        nu_ano_censo = row[8]
+        qt_mat_bas = row[9]
+        qt_mat_inf = row[10]
+        qt_mat_fund = row[11]
+        qt_mat_med = row[12]
+        qt_mat_prof = row[13]
+        qt_mat_eja = row[14]
+        qt_mat_esp = row[15]
 
-    # é preciso fechar a conexão e o cursor
-    cursor.close()
-    connection.close()
+        # cria o objeto passando todos os argumentos
+        instituicaoEnsino = InstituicaoEnsino(
+            no_entidade, co_entidade, no_uf, sg_uf, co_uf, no_municipio,
+            co_municipio, nu_ano_censo, qt_mat_bas, qt_mat_inf,
+            qt_mat_fund, qt_mat_med, qt_mat_prof, qt_mat_eja, qt_mat_esp
+        )
+
+        # retorna todas as intituiçoes do ensino em formato de dicionario
+        insituicoesEnsinoReponse.append(instituicaoEnsino.toDict())
 
     return insituicoesEnsinoReponse, 200
 
+@app.get("/intiuicoesensino/<int:id>")
+def getByIdIntituicoes(id):
+    pass
 
 @app.post("/instituicoesensino")
 def postInstituicoes():
