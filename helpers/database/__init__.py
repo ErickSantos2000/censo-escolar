@@ -4,12 +4,13 @@ from flask import g
 # define uma constante e guarda o nome do arquivo que representa o banco de dados em um variavel global
 DATABASE = 'censoescolar.db'
 
-
-
 # define uma função que encaspula a logica de conexão
 def get_conn():
     if 'db' not in g:
         g.db = sqlite3.connect(DATABASE)
+
+        # tranforma cada linha em um objeto acessivel por nome
+        g.db.row_factory = sqlite3.Row
     # retorna o obj de conexão
     return g.db
 
